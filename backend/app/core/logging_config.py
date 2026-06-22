@@ -24,7 +24,6 @@ def setup_logging(level: str = "info") -> None:
     root_logger.addHandler(handler)
 
     # Quiet noisy third-party loggers
-    logging.getLogger("chromadb").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
 
