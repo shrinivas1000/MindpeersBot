@@ -1,0 +1,326 @@
+/* ═══════════════════════════════════════════════════════════════
+   LandingHero — premium pastel gradient landing
+   ═══════════════════════════════════════════════════════════════ */
+
+.landing-hero {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-background);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Background — animated pastel gradient mesh
+   Takes up ~35% but bleeds softly into the cream
+   ═══════════════════════════════════════════════════════════════ */
+.landing-hero__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* Pastel blobs — soft, organic, alive */
+.landing-hero__orb {
+  position: absolute;
+  border-radius: 40%;
+  filter: blur(90px);
+  will-change: transform;
+  mix-blend-mode: normal;
+}
+
+.landing-hero__orb--1 {
+  width: 55vw;
+  height: 55vw;
+  max-width: 700px;
+  max-height: 700px;
+  background: radial-gradient(circle, rgba(196, 181, 230, 0.6) 0%, transparent 70%);
+  top: -22%;
+  left: -12%;
+  animation: blobMorph1 20s ease-in-out infinite;
+}
+
+.landing-hero__orb--2 {
+  width: 45vw;
+  height: 45vw;
+  max-width: 580px;
+  max-height: 580px;
+  background: radial-gradient(circle, rgba(245, 195, 170, 0.55) 0%, transparent 70%);
+  top: -8%;
+  right: -8%;
+  animation: blobMorph2 24s ease-in-out infinite;
+}
+
+.landing-hero__orb--3 {
+  width: 40vw;
+  height: 40vw;
+  max-width: 500px;
+  max-height: 500px;
+  background: radial-gradient(circle, rgba(230, 170, 190, 0.45) 0%, transparent 65%);
+  top: 8%;
+  left: 25%;
+  animation: blobMorph3 18s ease-in-out infinite;
+}
+
+.landing-hero__orb--4 {
+  width: 30vw;
+  height: 30vw;
+  max-width: 380px;
+  max-height: 380px;
+  background: radial-gradient(circle, rgba(240, 205, 150, 0.4) 0%, transparent 65%);
+  top: 2%;
+  right: 20%;
+  animation: blobMorph4 22s ease-in-out infinite;
+}
+
+/* Soft grain texture for depth */
+.landing-hero__grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Content — hero text centered with premium typography
+   ═══════════════════════════════════════════════════════════════ */
+.landing-hero__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-xl) var(--space-lg);
+  padding-bottom: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.landing-hero__heading {
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  margin-bottom: var(--space-lg);
+
+  /* Staggered reveal */
+  opacity: 0;
+  transform: translateY(30px);
+  animation: revealUp 1s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+}
+
+/* Gradient text accent on "feeling" */
+.landing-hero__heading-accent {
+  background: linear-gradient(135deg, #2d9f8f 0%, #5bb89a 40%, #88c9a1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.landing-hero__subtext {
+  font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+  font-weight: 400;
+  color: var(--color-text-muted);
+  max-width: 460px;
+  line-height: 1.6;
+
+  opacity: 0;
+  transform: translateY(24px);
+  animation: revealUp 1s cubic-bezier(0.22, 1, 0.36, 1) 0.4s forwards;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Bottom — suggestions + input bar, floating above fold
+   ═══════════════════════════════════════════════════════════════ */
+.landing-hero__bottom {
+  position: relative;
+  z-index: 1;
+  padding: 0 var(--space-lg) var(--space-2xl);
+  max-width: calc(var(--chat-max-width) + 2 * var(--space-lg));
+  margin: 0 auto;
+  width: 100%;
+
+  opacity: 0;
+  transform: translateY(20px);
+  animation: revealUp 1s cubic-bezier(0.22, 1, 0.36, 1) 0.65s forwards;
+}
+
+/* ── Suggestion chips ────────────────────────────────── */
+.landing-hero__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: var(--space-xl);
+}
+
+.landing-hero__chip {
+  padding: 11px 22px;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-primary);
+  background: rgba(45, 159, 143, 0.06);
+  border: 1px solid rgba(45, 159, 143, 0.14);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition:
+    background var(--transition-base),
+    border-color var(--transition-base),
+    transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow var(--transition-base);
+  white-space: nowrap;
+}
+
+.landing-hero__chip:hover:not(:disabled) {
+  background: rgba(45, 159, 143, 0.12);
+  border-color: rgba(45, 159, 143, 0.28);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 24px rgba(45, 159, 143, 0.10);
+}
+
+.landing-hero__chip:active:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.landing-hero__chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Input wrapper ───────────────────────────────────── */
+.landing-hero__input-wrapper {
+  margin-bottom: var(--space-lg);
+}
+
+/* ── Disclaimer ──────────────────────────────────────── */
+.landing-hero__disclaimer {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-align: center;
+  line-height: 1.6;
+  max-width: 480px;
+  margin: 0 auto;
+  letter-spacing: 0.01em;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Keyframes — organic blob morphing
+   ═══════════════════════════════════════════════════════════════ */
+@keyframes revealUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes blobMorph1 {
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+
+  25% {
+    transform: translate(30px, 20px) scale(1.06) rotate(2deg);
+  }
+
+  50% {
+    transform: translate(-10px, 50px) scale(0.96) rotate(-1deg);
+  }
+
+  75% {
+    transform: translate(40px, 10px) scale(1.03) rotate(1deg);
+  }
+}
+
+@keyframes blobMorph2 {
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+
+  25% {
+    transform: translate(-40px, 30px) scale(1.08) rotate(-2deg);
+  }
+
+  50% {
+    transform: translate(20px, -20px) scale(0.94) rotate(1deg);
+  }
+
+  75% {
+    transform: translate(-20px, 50px) scale(1.04) rotate(-1deg);
+  }
+}
+
+@keyframes blobMorph3 {
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+
+  25% {
+    transform: translate(25px, -30px) scale(1.05) rotate(1.5deg);
+  }
+
+  50% {
+    transform: translate(-35px, 15px) scale(0.95) rotate(-2deg);
+  }
+
+  75% {
+    transform: translate(15px, 35px) scale(1.02) rotate(0.5deg);
+  }
+}
+
+@keyframes blobMorph4 {
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+
+  25% {
+    transform: translate(-20px, -25px) scale(1.07) rotate(-1.5deg);
+  }
+
+  50% {
+    transform: translate(30px, 20px) scale(0.93) rotate(2deg);
+  }
+
+  75% {
+    transform: translate(-10px, -15px) scale(1.05) rotate(-0.5deg);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Responsive
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .landing-hero__bottom {
+    padding: 0 var(--space-md) var(--space-xl);
+  }
+
+  .landing-hero__suggestions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .landing-hero__chip {
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing-hero__heading {
+    font-size: 2.2rem;
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "description": "Crisis detection patterns for identifying self-harm, suicide ideation, and acute danger language. This is a structured, reviewable resource file. Patterns are organized by category for maintainability. Each pattern is a regex-compatible string (case-insensitive matching).",
+  "last_reviewed": "2026-06-21",
+  "categories": {
+    "suicide_ideation": {
+      "description": "Expressions of wanting to end one's life",
+      "patterns": [
+        "want to die",
+        "want to kill myself",
+        "wanting to die",
+        "i want to end it all",
+        "i want to end my life",
+        "i want it all to end",
+        "wish i was dead",
+        "wish i were dead",
+        "wish i wasn't alive",
+        "better off dead",
+        "don't want to be alive",
+        "don't want to live",
+        "don't want to exist",
+        "no reason to live",
+        "no point in living",
+        "nothing to live for",
+        "can't go on anymore",
+        "can't take it anymore",
+        "i'm going to kill myself",
+        "going to end my life",
+        "going to end it all",
+        "planning to kill myself",
+        "planning to end my life",
+        "thinking about killing myself",
+        "thinking about ending my life",
+        "thinking about suicide",
+        "considering suicide",
+        "contemplating suicide",
+        "suicidal thoughts",
+        "suicidal ideation",
+        "i am suicidal",
+        "i feel suicidal"
+      ]
+    },
+    "self_harm": {
+      "description": "Expressions of self-harm intent or behavior",
+      "patterns": [
+        "want to hurt myself",
+        "going to hurt myself",
+        "cutting myself",
+        "want to cut myself",
+        "i've been cutting",
+        "started cutting again",
+        "harming myself",
+        "self-harm",
+        "self harm",
+        "self-harming",
+        "want to burn myself",
+        "hitting myself",
+        "punching myself",
+        "starving myself on purpose",
+        "i hurt myself"
+      ]
+    },
+    "active_danger": {
+      "description": "Expressions suggesting immediate danger or a concrete plan",
+      "patterns": [
+        "i have a plan to",
+        "i'm about to jump",
+        "standing on the edge",
+        "on the ledge",
+        "have pills ready",
+        "have a rope",
+        "going to jump off",
+        "going to hang myself",
+        "overdose",
+        "took too many pills",
+        "i've taken pills",
+        "about to do something stupid",
+        "this is my last message",
+        "this is goodbye",
+        "goodbye everyone",
+        "no one will miss me",
+        "writing my note",
+        "wrote my note",
+        "suicide note",
+        "after i'm gone"
+      ]
+    },
+    "danger_to_others": {
+      "description": "Expressions suggesting intent to harm others",
+      "patterns": [
+        "want to hurt someone",
+        "going to hurt someone",
+        "want to kill someone",
+        "going to kill",
+        "i'm going to harm"
+      ]
+    }
+  }
+}

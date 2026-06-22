@@ -1,0 +1,110 @@
+/* ═══════════════════════════════════════════════════════════════
+   GradientWave — ambient gradient orbs + compact strip
+   ═══════════════════════════════════════════════════════════════ */
+
+.gradient-wave {
+  pointer-events: none;
+}
+
+/* ── Full-size mode — floating orbs ────────────────── */
+.gradient-wave--full {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.gradient-wave__orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.45;
+}
+
+.gradient-wave__orb--1 {
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, var(--color-primary) 0%, transparent 70%);
+  top: -120px;
+  left: -60px;
+  animation: orbDrift1 18s ease-in-out infinite;
+}
+
+.gradient-wave__orb--2 {
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, var(--color-secondary) 0%, transparent 70%);
+  top: -80px;
+  right: -40px;
+  animation: orbDrift2 22s ease-in-out infinite;
+}
+
+.gradient-wave__orb--3 {
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, var(--color-lavender) 0%, transparent 70%);
+  bottom: 5%;
+  left: 40%;
+  animation: orbDrift3 20s ease-in-out infinite;
+}
+
+/* ── Compact mode — thin gradient strip under header ── */
+.gradient-wave--compact {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  z-index: 10;
+}
+
+.gradient-wave__strip {
+  width: 100%;
+  height: 100%;
+  background: var(--gradient-brand);
+  opacity: 0.6;
+  background-size: 200% 100%;
+  animation: stripShimmer 4s ease-in-out infinite;
+}
+
+/* ── Keyframes ───────────────────────────────────────── */
+@keyframes orbDrift1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(50px, 30px) scale(1.05); }
+  66%      { transform: translate(-20px, 60px) scale(0.95); }
+}
+
+@keyframes orbDrift2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(-40px, 40px) scale(1.08); }
+  66%      { transform: translate(30px, -20px) scale(0.96); }
+}
+
+@keyframes orbDrift3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(30px, -30px) scale(1.06); }
+  66%      { transform: translate(-40px, 20px) scale(0.94); }
+}
+
+@keyframes stripShimmer {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@media (max-width: 768px) {
+  .gradient-wave__orb--1 {
+    width: 260px;
+    height: 260px;
+  }
+
+  .gradient-wave__orb--2 {
+    width: 220px;
+    height: 220px;
+  }
+
+  .gradient-wave__orb--3 {
+    width: 200px;
+    height: 200px;
+  }
+}

@@ -1,0 +1,70 @@
+/* ═══════════════════════════════════════════════════════════════
+   MessageBubble — clean, premium, cream-compatible
+   ═══════════════════════════════════════════════════════════════ */
+
+.message-bubble {
+  display: flex;
+  margin-bottom: var(--space-md);
+  animation: bubbleIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.message-bubble--user {
+  justify-content: flex-end;
+}
+
+.message-bubble--assistant {
+  justify-content: flex-start;
+}
+
+.message-bubble__content {
+  max-width: 70%;
+  padding: 14px 20px;
+  border-radius: 20px;
+  color: var(--color-text);
+  line-height: 1.65;
+  font-size: var(--font-size-base);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.message-bubble__content p {
+  margin-bottom: var(--space-sm);
+}
+
+.message-bubble__content p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── User bubble — soft teal tint ────────────────── */
+.message-bubble--user .message-bubble__content {
+  background: rgba(45, 159, 143, 0.08);
+  border: 1px solid rgba(45, 159, 143, 0.08);
+  border-bottom-right-radius: 6px;
+}
+
+/* ── Assistant bubble — clean white ──────────────── */
+.message-bubble--assistant .message-bubble__content {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom-left-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+@keyframes bubbleIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 768px) {
+  .message-bubble__content {
+    max-width: 88%;
+    padding: 10px 14px;
+    font-size: var(--font-size-sm);
+  }
+}

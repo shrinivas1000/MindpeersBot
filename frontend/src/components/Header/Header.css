@@ -1,0 +1,97 @@
+/* ═══════════════════════════════════════════════════════════════
+   Header — glassmorphic chat header
+   ═══════════════════════════════════════════════════════════════ */
+
+.header {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  height: var(--header-height);
+  position: relative;
+  z-index: 100;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.header__inner {
+  height: calc(var(--header-height) - 3px); /* room for the gradient strip */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-xl);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.header__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--gradient-brand-subtle);
+  color: var(--color-primary);
+}
+
+.header__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.header__title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-primary);
+  letter-spacing: -0.01em;
+}
+
+.header__status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(52, 199, 89, 0.08);
+  border: 1px solid rgba(52, 199, 89, 0.15);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--color-primary);
+  margin-left: var(--space-xs);
+}
+
+.header__indicator-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--color-highlight);
+  box-shadow: 0 0 6px rgba(52, 199, 89, 0.5);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.header__tagline {
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+
+@media (max-width: 768px) {
+  .header__inner {
+    padding: 0 var(--space-md);
+  }
+
+  .header__tagline {
+    display: none;
+  }
+}
