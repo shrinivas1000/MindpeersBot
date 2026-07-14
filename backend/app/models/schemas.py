@@ -18,6 +18,12 @@ class ChatRequest(BaseModel):
     session_id: str = Field(..., min_length=1, max_length=128, description="Session identifier")
 
 
+class TherapistInfo(BaseModel):
+    """A single therapist suggestion."""
+    name: str = Field(..., description="Therapist display name")
+    link: str = Field(..., description="Link to therapist profile on dashboard.mindpeers.co")
+
+
 class ChatResponse(BaseModel):
     """Response sent back to the frontend."""
     reply: str = Field(..., description="Bot response text")
@@ -25,6 +31,18 @@ class ChatResponse(BaseModel):
     sources: Optional[list[str]] = Field(
         default=None,
         description="Source descriptions from RAG retrieval, if any",
+    )
+    suggested_category: Optional[str] = Field(
+        default=None,
+        description="Detected concern category: stress, anxiety, or relationship",
+    )
+    suggested_therapists: Optional[list[TherapistInfo]] = Field(
+        default=None,
+        description="Therapist suggestions for the detected concern category",
+    )
+    therapist_cta: Optional[str] = Field(
+        default=None,
+        description="Friendly call-to-action line for the therapist suggestions",
     )
 
 

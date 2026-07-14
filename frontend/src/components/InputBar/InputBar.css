@@ -57,6 +57,77 @@
   cursor: not-allowed;
 }
 
+/* ── Mic button ──────────────────────────────────────── */
+.input-bar__mic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(45, 159, 143, 0.08);
+  color: #2d9f8f;
+  cursor: pointer;
+  transition:
+    transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow var(--transition-base),
+    background var(--transition-base);
+  flex-shrink: 0;
+}
+
+.input-bar__mic svg {
+  width: 18px;
+  height: 18px;
+}
+
+.input-bar__mic:hover:not(:disabled) {
+  background: rgba(45, 159, 143, 0.14);
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 4px 12px rgba(45, 159, 143, 0.15);
+}
+
+.input-bar__mic:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+}
+
+.input-bar__mic:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Listening state — pulsing teal glow */
+.input-bar__mic--listening {
+  background: linear-gradient(135deg, #2d9f8f 0%, #5bb89a 100%);
+  color: #ffffff;
+  animation: micPulse 1.5s ease-in-out infinite;
+  box-shadow:
+    0 0 0 0 rgba(45, 159, 143, 0.4),
+    0 4px 12px rgba(45, 159, 143, 0.25);
+}
+
+.input-bar__mic--listening:hover:not(:disabled) {
+  background: linear-gradient(135deg, #258a7c 0%, #4da88a 100%);
+}
+
+@keyframes micPulse {
+  0% {
+    box-shadow:
+      0 0 0 0 rgba(45, 159, 143, 0.4),
+      0 4px 12px rgba(45, 159, 143, 0.25);
+  }
+  50% {
+    box-shadow:
+      0 0 0 10px rgba(45, 159, 143, 0),
+      0 4px 16px rgba(45, 159, 143, 0.35);
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(45, 159, 143, 0.4),
+      0 4px 12px rgba(45, 159, 143, 0.25);
+  }
+}
+
 /* ── Send button — pastel gradient ───────────────── */
 .input-bar__send {
   display: flex;
@@ -108,9 +179,43 @@
   to { transform: rotate(360deg); }
 }
 
+/* ── Speech error message ───────────────────────────── */
+.input-bar__speech-error {
+  font-size: var(--font-size-xs, 12px);
+  color: #c0392b;
+  text-align: center;
+  padding: var(--space-sm, 6px) var(--space-md, 12px);
+  margin-top: var(--space-xs, 4px);
+  max-width: var(--chat-max-width);
+  margin-left: auto;
+  margin-right: auto;
+  animation: errorFadeIn 0.3s ease;
+}
+
+@keyframes errorFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 768px) {
   .input-bar__wrapper {
     padding: 4px 4px 4px var(--space-md);
+  }
+
+  .input-bar__mic {
+    width: 40px;
+    height: 40px;
+  }
+
+  .input-bar__mic svg {
+    width: 16px;
+    height: 16px;
   }
 
   .input-bar__send {

@@ -1,0 +1,17 @@
+{
+  "stress": [
+    {"name": "Shrinkhala Aren", "link": "https://dashboard.mindpeers.co/therapy/meet-our-experts/profile/shrinkhala-aren"},
+    {"name": "Sani Suroop", "link": "https://dashboard.mindpeers.co/therapy/meet-our-experts/profile/sannidhi-surop-0001"},
+    {"name": "Kratika Loya", "link": "https://dashboard.mindpeers.co/therapy/meet-our-experts/profile/kratika-loya"}
+  ],
+  "anxiety": [
+    {"name": "Dr. Saachi Arora", "link": "https://dashboard.mindpeers.co/therapy/meet-our-experts/profile/saachi-arora"},
+    {"name": "Apeksha", "link": "https://dashboard.mindpeers.co/therapy/meet-our-experts/profile/apeksha-000018"},
+    {"name": "Rohan Chandak", "link": "https://dashboard.mindpeers.co/therapy/meet-our-experts/profile/rohan-0060"}
+  ],
+  "relationship": [
+    {"name": "Rhea Jaya", "link": "https://dashboard.mindpeers.co/therapy/meet-our-experts/profile/rhea-jaya-0001"},
+    {"name": "Jasar Khan", "link": "https://dashboard.mindpeers.co/therapy/meet-our-experts/profile/jasar-khan"},
+    {"name": "Samantha Narula", "link": "https://dashboard.mindpeers.co/therapy/meet-our-experts/profile/samantha-narula"}
+  ]
+}

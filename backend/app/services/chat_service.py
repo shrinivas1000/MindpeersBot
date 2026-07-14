@@ -10,9 +10,11 @@ Flow:
 6. Return response to caller
 """
 
+from app.core.config import settings
 from app.core.logging_config import get_logger
 from app.guardrails.crisis_detector import detect_crisis, get_crisis_response, log_crisis_event
 from app.guardrails.topic_classifier import classify_topic, REDIRECT_RESPONSE
+from app.guardrails.concern_classifier import classify_concern, get_therapist_suggestions
 from app.guardrails.output_moderation import moderate_output
 from app.guardrails.system_prompt import get_system_prompt
 from app.rag.retriever import retrieve_context
@@ -103,6 +105,29 @@ async def process_message(message: str, session_id: str) -> ChatResponse:
     if was_modified:
         logger.info("Output moderation modified response | session_id=%s", session_id)
 
+    # ── Step 5.5: Concern Classification (therapist suggestions) ─────
+    suggested_category = None
+    suggested_therapists = None
+    therapist_cta = None
+
+    if settings.enable_therapist_suggestions and session_store.should_suggest_therapists(session_id):
+        try:
+            concern = await classify_concern(message)
+            if concern != "none":
+                suggestion = get_therapist_suggestions(concern)
+                if suggestion:
+                    therapist_list, cta = suggestion
+                    suggested_category = concern
+                    suggested_therapists = therapist_list
+                    therapist_cta = cta
+                    session_store.mark_therapist_suggested(session_id)
+                    logger.info(
+                        "Therapist suggestion added | session_id=%s | category=%s",
+                        session_id, concern,
+                    )
+        except Exception as e:
+            logger.error("Concern classification error: %s — skipping suggestions", e)
+
     # ── Step 6: Store in Session History ──────────────────────────────
     session_store.add_message(session_id, "user", message)
     session_store.add_message(session_id, "assistant", moderated_response)
@@ -111,4 +136,7 @@ async def process_message(message: str, session_id: str) -> ChatResponse:
         reply=moderated_response,
         type=ResponseType.NORMAL,
         sources=sources,
+        suggested_category=suggested_category,
+        suggested_therapists=suggested_therapists,
+        therapist_cta=therapist_cta,
     )

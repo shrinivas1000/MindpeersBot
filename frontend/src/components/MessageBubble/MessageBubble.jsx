@@ -4,9 +4,11 @@
  * User messages: aligned right, secondary tint background.
  * Assistant messages: aligned left, background with thin border.
  * All text is near-black.
+ * Therapist suggestions rendered as a distinct card below assistant messages.
  */
 
 import './MessageBubble.css';
+import TherapistSuggestion from '../TherapistSuggestion/TherapistSuggestion';
 
 /**
  * Strip any emojis from text as a safety net.
@@ -22,6 +24,7 @@ function stripEmojis(text) {
 export default function MessageBubble({ message }) {
   const isUser = message.role === 'user';
   const displayText = stripEmojis(message.content);
+  const hasSuggestions = !isUser && message.suggested_therapists && message.suggested_therapists.length > 0;
 
   return (
     <div
@@ -33,6 +36,13 @@ export default function MessageBubble({ message }) {
           paragraph.trim() ? <p key={i}>{paragraph}</p> : null
         ))}
       </div>
+      {hasSuggestions && (
+        <TherapistSuggestion
+          cta={message.therapist_cta}
+          therapists={message.suggested_therapists}
+        />
+      )}
     </div>
   );
 }
+

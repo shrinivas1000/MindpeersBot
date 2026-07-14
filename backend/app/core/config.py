@@ -47,6 +47,12 @@ class Settings(BaseSettings):
         description="Number of RAG chunks to retrieve per query",
     )
 
+    # Feature flags
+    enable_therapist_suggestions: bool = Field(
+        default=True,
+        description="Enable concern-based therapist suggestions in chat responses",
+    )
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",

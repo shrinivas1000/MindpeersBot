@@ -57,6 +57,9 @@ export default function useChat() {
         content: response.reply,
         type: response.type,
         sources: response.sources || null,
+        suggested_category: response.suggested_category || null,
+        suggested_therapists: response.suggested_therapists || null,
+        therapist_cta: response.therapist_cta || null,
       };
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err) {

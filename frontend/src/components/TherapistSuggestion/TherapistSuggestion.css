@@ -1,0 +1,96 @@
+/* ═══════════════════════════════════════════════════════════════
+   TherapistSuggestion — soft card with therapist chips
+   ═══════════════════════════════════════════════════════════════ */
+
+.therapist-suggestion {
+  margin-top: var(--space-sm);
+  padding: 14px 18px;
+  background: linear-gradient(135deg, rgba(45, 159, 143, 0.04) 0%, rgba(91, 184, 154, 0.06) 100%);
+  border: 1px solid rgba(45, 159, 143, 0.10);
+  border-radius: 16px;
+  max-width: 70%;
+  animation: suggestionIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+
+.therapist-suggestion__cta {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.therapist-suggestion__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.therapist-suggestion__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #ffffff;
+  border: 1px solid rgba(45, 159, 143, 0.15);
+  border-radius: var(--radius-pill, 999px);
+  color: #2d9f8f;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow var(--transition-base),
+    border-color var(--transition-base),
+    background var(--transition-base);
+  cursor: pointer;
+}
+
+.therapist-suggestion__chip:hover {
+  background: rgba(45, 159, 143, 0.06);
+  border-color: rgba(45, 159, 143, 0.30);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(45, 159, 143, 0.12);
+}
+
+.therapist-suggestion__chip:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.therapist-suggestion__name {
+  white-space: nowrap;
+}
+
+.therapist-suggestion__link-icon {
+  width: 13px;
+  height: 13px;
+  opacity: 0.6;
+  flex-shrink: 0;
+  transition: opacity var(--transition-base);
+}
+
+.therapist-suggestion__chip:hover .therapist-suggestion__link-icon {
+  opacity: 1;
+}
+
+@keyframes suggestionIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 768px) {
+  .therapist-suggestion {
+    max-width: 88%;
+    padding: 10px 14px;
+  }
+
+  .therapist-suggestion__chip {
+    padding: 6px 12px;
+    font-size: var(--font-size-xs, 12px);
+  }
+}
