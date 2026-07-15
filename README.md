@@ -1,6 +1,6 @@
 # MindBridge: Mental Health Support Chatbot
 
-A mental wellbeing support chatbot with a FastAPI backend (Gemini API, RAG, guardrails) and a React + Vite frontend.
+A mental wellbeing support chatbot with a FastAPI backend (Gemini API, RAG, guardrails) and a React + Vite frontend. 
 
 > **Important**: This is a wellbeing support tool, not a substitute for professional mental health care. In an emergency, contact local emergency services or the helplines listed below.
 
@@ -50,6 +50,8 @@ Response -> Frontend -> Chat UI + Therapist Cards
 
 ### Voice Input (Web Speech API)
 
+Users can speak their messages instead of typing — especially useful for expressing difficult emotions.
+
 - **Real-time transcription**: The input field updates live as the user speaks, showing both interim (unconfirmed) and final text
 - **Continuous mode**: Keeps listening across natural pauses in speech
 - **Auto-stop**: Silences for 3 seconds triggers automatic stop; hard cutoff at 60 seconds to prevent runaway sessions
@@ -58,6 +60,8 @@ Response -> Frontend -> Chat UI + Therapist Cards
 - **Append mode**: Voice input appends to any existing text in the input field, so users can combine typing and speaking
 
 ### Therapist Suggestions
+
+The chatbot intelligently identifies the user's concern category and suggests relevant MindPeers therapists.
 
 - **Two-stage classification**: Fast keyword matching first, then Gemini LLM fallback for ambiguous messages
 - **Three concern categories**: Stress, Anxiety, and Relationship — each with 3 curated therapists
@@ -165,7 +169,7 @@ Tests cover:
 
 ### Crisis Detector
 - Deterministic regex/keyword matching against a curated pattern file (`app/guardrails/crisis_patterns.json`)
-- Bypasses the LLM entirely and returns hardcoded helpline response
+- Bypasses the LLM entirely — returns hardcoded helpline response
 - Works even if the Gemini API is down
 - Privacy-conscious logging: timestamps and session IDs only, no raw message content
 
@@ -238,12 +242,12 @@ chatBOT/
 │   │   │   ├── config.py
 │   │   │   └── logging_config.py
 │   │   ├── data/
-│   │   │   └── therapists.json         
+│   │   │   └── therapists.json          # Curated therapist data per category
 │   │   ├── guardrails/
 │   │   │   ├── crisis_detector.py
 │   │   │   ├── crisis_patterns.json
 │   │   │   ├── topic_classifier.py
-│   │   │   ├── concern_classifier.py    
+│   │   │   ├── concern_classifier.py    # NEW — concern classification + therapist lookup
 │   │   │   ├── output_moderation.py
 │   │   │   └── system_prompt.py
 │   │   ├── rag/
@@ -267,13 +271,13 @@ chatBOT/
 │   │   │   ├── GradientWave/
 │   │   │   ├── ChatWindow/
 │   │   │   ├── MessageBubble/
-│   │   │   ├── InputBar/               
+│   │   │   ├── InputBar/                # Voice input (mic button + Web Speech API)
 │   │   │   ├── CrisisBanner/
 │   │   │   ├── Header/
-│   │   │   └── TherapistSuggestion/     
+│   │   │   └── TherapistSuggestion/     # NEW — therapist recommendation cards
 │   │   ├── hooks/
 │   │   │   ├── useChat.js
-│   │   │   └── useSpeechRecognition.js  
+│   │   │   └── useSpeechRecognition.js  # NEW — Web Speech API hook
 │   │   ├── services/api.js
 │   │   ├── styles/theme.css
 │   │   ├── App.jsx
@@ -283,7 +287,7 @@ chatBOT/
 │   ├── package.json
 │   └── .env.example
 ├── api/
-│   └── index.py                         
+│   └── index.py                         # Vercel serverless entry point
 ├── vercel.json
 └── README.md
 ```
