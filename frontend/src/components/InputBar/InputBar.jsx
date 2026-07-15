@@ -1,15 +1,20 @@
 /**
  * InputBar — text input + mic button + send button for composing messages.
  *
+ * State machine:
+ *   IDLE       → textarea editable, mic button starts listening
+ *   LISTENING  → textarea read-only (shows typed prefix + live speech),
+ *                mic button stops, send button stops + sends
+ *   IDLE       → speech committed into text, fully editable again
+ *
  * Features:
  * - Auto-expanding textarea (up to 4 lines)
  * - Send on Enter (Shift+Enter for newline)
  * - Voice input via Web Speech API (Chrome/Edge) — hidden in unsupported browsers
- * - Real-time speech-to-text: input field updates as the user speaks
- * - Typing during voice: new keystrokes are appended after the speech text
- * - Send while listening: stops mic, grabs final transcript, sends immediately
+ * - Textarea is read-only during listening — no keyboard conflicts
+ * - When speech stops, transcript lands in the field and user can type from there
+ * - Send while listening: stops mic, grabs final text, sends atomically
  * - Disabled state while loading
- * - No emojis in placeholder or labels
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -17,16 +22,15 @@ import useSpeechRecognition from '../../hooks/useSpeechRecognition';
 import './InputBar.css';
 
 export default function InputBar({ onSend, isLoading }) {
+  // Committed text — only modified by keyboard input (idle) or speech commit (on stop)
   const [text, setText] = useState('');
   const textareaRef = useRef(null);
 
-  // Tracks the portion of `text` that came from the keyboard (typed before
-  // or during a listening session). Speech output is appended after this.
-  const typedTextRef = useRef('');
+  // Ref mirror of `text` for async callbacks (avoids stale closures)
+  const textRef = useRef('');
 
-  // Guard: prevents the speech-sync effect from running after we've already
-  // consumed the transcript (e.g. after send).
-  const suppressSpeechSyncRef = useRef(false);
+  // Guards the commit effect from firing during a send-while-listening flow
+  const isSendingRef = useRef(false);
 
   const {
     isSupported: isSpeechSupported,
@@ -39,89 +43,94 @@ export default function InputBar({ onSend, isLoading }) {
     reset: resetSpeech,
   } = useSpeechRecognition();
 
-  // ── Sync speech transcript into the text field in real-time ──────────
-  useEffect(() => {
-    if (suppressSpeechSyncRef.current) return;
-    if (!isListening && !finalText && !interimText) return;
+  // Keep textRef in sync with state
+  const updateText = useCallback((newText) => {
+    textRef.current = newText;
+    setText(newText);
+  }, []);
 
-    const typed = typedTextRef.current;
-    const separator = typed && !typed.endsWith(' ') ? ' ' : '';
-    const speechPart = finalText + (interimText || '');
+  // ── Display value ───────────────────────────────────────────────────
+  // Idle:      show committed text (editable)
+  // Listening: show committed text + live speech (read-only)
+  const displayValue = (() => {
+    if (!isListening) return text;
+    const speech = finalText + (interimText || '');
+    if (!speech) return text;
+    const sep = text && !text.endsWith(' ') ? ' ' : '';
+    return text + sep + speech;
+  })();
 
-    if (speechPart) {
-      setText(typed + separator + speechPart);
-    }
-  }, [finalText, interimText, isListening]);
-
-  // ── When listening stops naturally (silence timeout / max duration),
-  //    commit the final speech text into typedTextRef so subsequent
-  //    keystrokes append correctly. ─────────────────────────────────────
+  // ── Commit speech when listening stops naturally ────────────────────
+  // (silence timeout, max duration, or manual mic-off click)
   const prevListeningRef = useRef(false);
   useEffect(() => {
-    if (prevListeningRef.current && !isListening) {
-      // Listening just ended — if not suppressed, commit the current
-      // text as the new "typed" baseline.
-      if (!suppressSpeechSyncRef.current) {
-        typedTextRef.current = text;
-      }
-    }
+    const wasListening = prevListeningRef.current;
     prevListeningRef.current = isListening;
-  }, [isListening, text]);
 
-  // ── Auto-resize textarea helper ─────────────────────────────────────
-  const resizeTextarea = useCallback(() => {
+    if (wasListening && !isListening && !isSendingRef.current) {
+      if (finalText) {
+        const current = textRef.current;
+        const sep = current && !current.endsWith(' ') ? ' ' : '';
+        updateText(current + sep + finalText);
+      }
+      resetSpeech();
+    }
+  }, [isListening, finalText, resetSpeech, updateText]);
+
+  // ── Auto-resize textarea (covers both typed and speech-injected text)
+  useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
       textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
     }
-  }, []);
+  }, [displayValue]);
 
-  // Resize whenever text changes (covers speech-injected text too)
+  // ── Focus textarea when listening stops so user can type immediately
   useEffect(() => {
-    resizeTextarea();
-  }, [text, resizeTextarea]);
+    if (!isListening && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [isListening]);
 
-  // ── Send logic ──────────────────────────────────────────────────────
-  const doSend = useCallback((messageText) => {
-    const trimmed = messageText.trim();
-    if (!trimmed || isLoading) return;
-
-    // Suppress speech sync so onend doesn't resurrect the text
-    suppressSpeechSyncRef.current = true;
-
-    onSend(trimmed);
-    setText('');
-    typedTextRef.current = '';
+  // ── Clear everything ───────────────────────────────────────────────
+  const clearInput = useCallback(() => {
+    updateText('');
     resetSpeech();
-
-    // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
+  }, [updateText, resetSpeech]);
 
-    // Re-enable speech sync after a tick (for the next interaction)
-    requestAnimationFrame(() => {
-      suppressSpeechSyncRef.current = false;
-    });
-  }, [isLoading, onSend, resetSpeech]);
-
+  // ── Submit handler ─────────────────────────────────────────────────
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
+    if (isLoading) return;
 
     if (isListening) {
-      // Stop the mic and grab the final transcript before sending.
-      // This ensures we capture any in-flight interim text.
+      // Atomic stop-and-send: stop mic → grab final transcript → send → clear
+      isSendingRef.current = true;
       const speechFinal = await stopListening();
-      const typed = typedTextRef.current;
-      const separator = typed && !typed.endsWith(' ') ? ' ' : '';
-      const fullMessage = typed + (speechFinal ? separator + speechFinal : '');
-      doSend(fullMessage);
-    } else {
-      doSend(text);
-    }
-  }, [isListening, stopListening, text, doSend]);
+      const current = textRef.current;
+      const sep = current && !current.endsWith(' ') ? ' ' : '';
+      const fullMessage = (current + (speechFinal ? sep + speechFinal : '')).trim();
 
+      if (fullMessage) {
+        onSend(fullMessage);
+        clearInput();
+      }
+      isSendingRef.current = false;
+    } else {
+      const trimmed = text.trim();
+      if (trimmed) {
+        onSend(trimmed);
+        clearInput();
+      }
+    }
+  }, [isLoading, isListening, stopListening, text, onSend, clearInput]);
+
+  // ── Keyboard handling ──────────────────────────────────────────────
+  // Enter fires even on readOnly textareas, so send-while-listening works
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -129,38 +138,19 @@ export default function InputBar({ onSend, isLoading }) {
     }
   }, [handleSubmit]);
 
+  // ── Typing (only fires when not readOnly, i.e., not listening) ─────
   const handleChange = useCallback((e) => {
-    const newValue = e.target.value;
-    setText(newValue);
+    updateText(e.target.value);
+  }, [updateText]);
 
-    // If listening, update the typed portion to be everything the user
-    // has in the box minus the current speech output. This handles the
-    // case where the user types additional text while speaking.
-    if (isListening) {
-      const speechPart = finalText + (interimText || '');
-      if (speechPart && newValue.endsWith(speechPart)) {
-        // User is editing before the speech portion
-        typedTextRef.current = newValue.slice(0, newValue.length - speechPart.length).trimEnd();
-      } else {
-        // User is editing/appending freely — treat the whole thing as typed
-        typedTextRef.current = newValue;
-      }
-    } else {
-      // Not listening: all text is "typed"
-      typedTextRef.current = newValue;
-    }
-  }, [isListening, finalText, interimText]);
-
+  // ── Mic toggle ─────────────────────────────────────────────────────
   const handleMicClick = useCallback(() => {
     if (isListening) {
       stopListening();
     } else {
-      // Snapshot whatever is currently typed as the prefix
-      typedTextRef.current = text;
-      suppressSpeechSyncRef.current = false;
       startListening();
     }
-  }, [isListening, stopListening, startListening, text]);
+  }, [isListening, stopListening, startListening]);
 
   const placeholder = isListening
     ? 'Listening...'
@@ -173,11 +163,12 @@ export default function InputBar({ onSend, isLoading }) {
           ref={textareaRef}
           className="input-bar__input"
           id="chat-input"
-          value={text}
+          value={displayValue}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={isLoading}
+          readOnly={isListening}
           rows={1}
           aria-label="Message input"
         />
@@ -214,7 +205,7 @@ export default function InputBar({ onSend, isLoading }) {
           type="submit"
           className="input-bar__send"
           id="send-button"
-          disabled={!text.trim() || isLoading}
+          disabled={!displayValue.trim() || isLoading}
           aria-label="Send message"
         >
           {isLoading ? (
