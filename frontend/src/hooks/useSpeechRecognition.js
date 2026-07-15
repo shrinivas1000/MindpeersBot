@@ -8,12 +8,15 @@
  * Features:
  * - Continuous mode: keeps listening across natural pauses in speech
  * - Real-time interim results for live typing feedback
- * - 5-second silence timeout: auto-stops if no speech detected for 5s
+ * - 3-second silence timeout: auto-stops if no speech detected for 3s
  * - 60-second max duration: hard cutoff to prevent runaway sessions
  * - Accumulated transcripts: multiple final segments are concatenated
+ * - reset() to clear state after the caller consumes the transcript
+ * - stopListening() returns a Promise<string> with the final transcript
  *
  * Usage:
- *   const { isSupported, isListening, error, finalText, interimText, startListening, stopListening }
+ *   const { isSupported, isListening, error, finalText, interimText,
+ *           startListening, stopListening, reset }
  *     = useSpeechRecognition();
  */
 
@@ -39,6 +42,13 @@ export default function useSpeechRecognition() {
   const silenceTimerRef = useRef(null);
   const maxDurationTimerRef = useRef(null);
   const errorTimerRef = useRef(null);
+
+  // Ref-backed accumulator so onresult always has the latest value
+  // without depending on React state (avoids stale closures).
+  const accumulatedRef = useRef('');
+
+  // Promise resolve function for stopListening() callers
+  const stopResolveRef = useRef(null);
 
   const isSupported = !!SpeechRecognition;
 
@@ -71,20 +81,43 @@ export default function useSpeechRecognition() {
     maxDurationTimerRef.current = null;
   }, []);
 
+  /**
+   * Stop the recognition engine. Returns a Promise that resolves with
+   * the final accumulated transcript once the engine has fully stopped.
+   * Safe to call multiple times — subsequent calls resolve immediately.
+   */
   const stopListening = useCallback(() => {
     clearTimers();
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
+
+    // If not currently listening, resolve immediately with whatever we have
+    if (!recognitionRef.current) {
+      return Promise.resolve(accumulatedRef.current);
     }
+
+    return new Promise((resolve) => {
+      stopResolveRef.current = resolve;
+      recognitionRef.current.stop();
+    });
   }, [clearTimers]);
 
   const resetSilenceTimer = useCallback(() => {
     clearTimeout(silenceTimerRef.current);
     silenceTimerRef.current = setTimeout(() => {
-      // No speech for 5 seconds — auto-stop
+      // No speech for SILENCE_TIMEOUT_MS — auto-stop
       stopListening();
     }, SILENCE_TIMEOUT_MS);
   }, [stopListening]);
+
+  /**
+   * Reset all speech state. Call this after consuming the transcript
+   * (e.g. after sending a message) so stale text doesn't leak back
+   * into the input field.
+   */
+  const reset = useCallback(() => {
+    setFinalText('');
+    setInterimText('');
+    accumulatedRef.current = '';
+  }, []);
 
   const startListening = useCallback(() => {
     if (!isSupported || isListening) return;
@@ -92,6 +125,7 @@ export default function useSpeechRecognition() {
     setError(null);
     setFinalText('');
     setInterimText('');
+    accumulatedRef.current = '';
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
@@ -128,6 +162,7 @@ export default function useSpeechRecognition() {
         }
       }
 
+      accumulatedRef.current = accumulated;
       setFinalText(accumulated);
       setInterimText(currentInterim);
     };
@@ -146,6 +181,11 @@ export default function useSpeechRecognition() {
         setError(message);
         clearTimers();
         setIsListening(false);
+        // Resolve any pending stop promise
+        if (stopResolveRef.current) {
+          stopResolveRef.current(accumulatedRef.current);
+          stopResolveRef.current = null;
+        }
       }
     };
 
@@ -154,6 +194,12 @@ export default function useSpeechRecognition() {
       setIsListening(false);
       setInterimText('');
       recognitionRef.current = null;
+
+      // Resolve any pending stop promise with the final accumulated text
+      if (stopResolveRef.current) {
+        stopResolveRef.current(accumulatedRef.current);
+        stopResolveRef.current = null;
+      }
     };
 
     recognitionRef.current = recognition;
@@ -168,5 +214,6 @@ export default function useSpeechRecognition() {
     error,
     startListening,
     stopListening,
+    reset,
   };
 }

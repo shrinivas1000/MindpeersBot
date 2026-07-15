@@ -6,19 +6,27 @@
  * - Send on Enter (Shift+Enter for newline)
  * - Voice input via Web Speech API (Chrome/Edge) — hidden in unsupported browsers
  * - Real-time speech-to-text: input field updates as the user speaks
+ * - Typing during voice: new keystrokes are appended after the speech text
+ * - Send while listening: stops mic, grabs final transcript, sends immediately
  * - Disabled state while loading
  * - No emojis in placeholder or labels
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import useSpeechRecognition from '../../hooks/useSpeechRecognition';
 import './InputBar.css';
 
 export default function InputBar({ onSend, isLoading }) {
   const [text, setText] = useState('');
-  // Text that was in the input before the user started speaking
-  const preListeningTextRef = useRef('');
   const textareaRef = useRef(null);
+
+  // Tracks the portion of `text` that came from the keyboard (typed before
+  // or during a listening session). Speech output is appended after this.
+  const typedTextRef = useRef('');
+
+  // Guard: prevents the speech-sync effect from running after we've already
+  // consumed the transcript (e.g. after send).
+  const suppressSpeechSyncRef = useRef(false);
 
   const {
     isSupported: isSpeechSupported,
@@ -28,67 +36,131 @@ export default function InputBar({ onSend, isLoading }) {
     error: speechError,
     startListening,
     stopListening,
+    reset: resetSpeech,
   } = useSpeechRecognition();
 
-  // Snapshot the current text when listening starts
+  // ── Sync speech transcript into the text field in real-time ──────────
   useEffect(() => {
-    if (isListening) {
-      preListeningTextRef.current = text;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isListening]);
-
-  // Update the text field in real-time as speech is recognized
-  useEffect(() => {
+    if (suppressSpeechSyncRef.current) return;
     if (!isListening && !finalText && !interimText) return;
 
-    const prefix = preListeningTextRef.current;
-    const separator = prefix && !prefix.endsWith(' ') ? ' ' : '';
-    const liveText = finalText + (interimText ? interimText : '');
+    const typed = typedTextRef.current;
+    const separator = typed && !typed.endsWith(' ') ? ' ' : '';
+    const speechPart = finalText + (interimText || '');
 
-    if (liveText) {
-      setText(prefix + separator + liveText);
+    if (speechPart) {
+      setText(typed + separator + speechPart);
     }
   }, [finalText, interimText, isListening]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const trimmed = text.trim();
-    if (trimmed && !isLoading) {
-      onSend(trimmed);
-      setText('');
-      preListeningTextRef.current = '';
-      // Reset textarea height
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
+  // ── When listening stops naturally (silence timeout / max duration),
+  //    commit the final speech text into typedTextRef so subsequent
+  //    keystrokes append correctly. ─────────────────────────────────────
+  const prevListeningRef = useRef(false);
+  useEffect(() => {
+    if (prevListeningRef.current && !isListening) {
+      // Listening just ended — if not suppressed, commit the current
+      // text as the new "typed" baseline.
+      if (!suppressSpeechSyncRef.current) {
+        typedTextRef.current = text;
       }
     }
-  };
+    prevListeningRef.current = isListening;
+  }, [isListening, text]);
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e);
-    }
-  };
-
-  const handleChange = (e) => {
-    setText(e.target.value);
-    // Auto-resize textarea
+  // ── Auto-resize textarea helper ─────────────────────────────────────
+  const resizeTextarea = useCallback(() => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
       textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
     }
-  };
+  }, []);
 
-  const handleMicClick = () => {
+  // Resize whenever text changes (covers speech-injected text too)
+  useEffect(() => {
+    resizeTextarea();
+  }, [text, resizeTextarea]);
+
+  // ── Send logic ──────────────────────────────────────────────────────
+  const doSend = useCallback((messageText) => {
+    const trimmed = messageText.trim();
+    if (!trimmed || isLoading) return;
+
+    // Suppress speech sync so onend doesn't resurrect the text
+    suppressSpeechSyncRef.current = true;
+
+    onSend(trimmed);
+    setText('');
+    typedTextRef.current = '';
+    resetSpeech();
+
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+
+    // Re-enable speech sync after a tick (for the next interaction)
+    requestAnimationFrame(() => {
+      suppressSpeechSyncRef.current = false;
+    });
+  }, [isLoading, onSend, resetSpeech]);
+
+  const handleSubmit = useCallback(async (e) => {
+    e.preventDefault();
+
+    if (isListening) {
+      // Stop the mic and grab the final transcript before sending.
+      // This ensures we capture any in-flight interim text.
+      const speechFinal = await stopListening();
+      const typed = typedTextRef.current;
+      const separator = typed && !typed.endsWith(' ') ? ' ' : '';
+      const fullMessage = typed + (speechFinal ? separator + speechFinal : '');
+      doSend(fullMessage);
+    } else {
+      doSend(text);
+    }
+  }, [isListening, stopListening, text, doSend]);
+
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  }, [handleSubmit]);
+
+  const handleChange = useCallback((e) => {
+    const newValue = e.target.value;
+    setText(newValue);
+
+    // If listening, update the typed portion to be everything the user
+    // has in the box minus the current speech output. This handles the
+    // case where the user types additional text while speaking.
+    if (isListening) {
+      const speechPart = finalText + (interimText || '');
+      if (speechPart && newValue.endsWith(speechPart)) {
+        // User is editing before the speech portion
+        typedTextRef.current = newValue.slice(0, newValue.length - speechPart.length).trimEnd();
+      } else {
+        // User is editing/appending freely — treat the whole thing as typed
+        typedTextRef.current = newValue;
+      }
+    } else {
+      // Not listening: all text is "typed"
+      typedTextRef.current = newValue;
+    }
+  }, [isListening, finalText, interimText]);
+
+  const handleMicClick = useCallback(() => {
     if (isListening) {
       stopListening();
     } else {
+      // Snapshot whatever is currently typed as the prefix
+      typedTextRef.current = text;
+      suppressSpeechSyncRef.current = false;
       startListening();
     }
-  };
+  }, [isListening, stopListening, startListening, text]);
 
   const placeholder = isListening
     ? 'Listening...'
