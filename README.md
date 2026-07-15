@@ -1,6 +1,6 @@
 # MindBridge — Mental Health Support Chatbot
 
-A production-quality mental wellbeing support chatbot with a FastAPI backend (Gemini API, RAG, guardrails) and a React + Vite frontend.
+A production-quality mental wellbeing support chatbot with a FastAPI backend (Gemini API, RAG, guardrails) and a React + Vite frontend. Built for [Mindpeers](https://dashboard.mindpeers.co).
 
 > **Important**: This is a wellbeing support tool, not a substitute for professional mental health care. In an emergency, contact local emergency services or the helplines listed below.
 
@@ -9,7 +9,7 @@ A production-quality mental wellbeing support chatbot with a FastAPI backend (Ge
 ## Architecture
 
 ```
-User message
+User message (text or voice)
     |
     v
 React Frontend (Vite)
@@ -35,8 +35,41 @@ Gemini API call (system prompt + context + history)
 Output Moderation (strip diagnosis/medication language)
     |
     v
-Response -> Frontend -> Chat UI
+Concern Classifier (keyword + Gemini fallback)
+    |  stress / anxiety / relationship / none
+    v
+Therapist Suggestion (from curated JSON)
+    |  3 MindPeers therapist links per category
+    v
+Response -> Frontend -> Chat UI + Therapist Cards
 ```
+
+---
+
+## Features
+
+### 🎙️ Voice Input (Web Speech API)
+
+Users can speak their messages instead of typing — especially useful for expressing difficult emotions.
+
+- **Real-time transcription**: The input field updates live as the user speaks, showing both interim (unconfirmed) and final text
+- **Continuous mode**: Keeps listening across natural pauses in speech
+- **Auto-stop**: Silences for 3 seconds triggers automatic stop; hard cutoff at 60 seconds to prevent runaway sessions
+- **Graceful degradation**: The mic button is hidden entirely in unsupported browsers (Firefox, Safari); works in Chrome and Edge
+- **Error handling**: Friendly messages for denied microphone permissions, missing devices, and network errors; auto-dismiss after 3 seconds
+- **Append mode**: Voice input appends to any existing text in the input field, so users can combine typing and speaking
+
+### 🧠 Therapist Suggestions
+
+The chatbot intelligently identifies the user's concern category and suggests relevant MindPeers therapists.
+
+- **Two-stage classification**: Fast keyword matching first, then Gemini LLM fallback for ambiguous messages
+- **Three concern categories**: Stress, Anxiety, and Relationship — each with 3 curated therapists
+- **Smart throttling**: Suggestions appear only once per session to avoid being pushy (`should_suggest_therapists` / `mark_therapist_suggested`)
+- **Clickable therapist cards**: Each suggestion links directly to the therapist's profile on `dashboard.mindpeers.co` (opens in a new tab)
+- **Randomised CTAs**: The call-to-action text varies across 5 friendly variants to feel natural
+- **Feature flag**: Can be toggled on/off via the `ENABLE_THERAPIST_SUGGESTIONS` environment variable
+- **Backend-driven**: All classification and suggestion logic runs server-side; the frontend simply renders what it receives
 
 ---
 
@@ -46,11 +79,13 @@ Response -> Frontend -> Chat UI
 |---|---|
 | Backend | FastAPI, Python 3.11+ |
 | LLM | Google Gemini API (`gemini-2.5-flash`) |
-| Embeddings | Gemini `text-embedding-004` |
+| Embeddings | Gemini `gemini-embedding-001` |
 | Vector Store | ChromaDB (local, file-based) |
 | Frontend | React + Vite |
 | Styling | Plain CSS with CSS custom properties |
+| Voice Input | Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`) |
 | Sessions | In-memory (keyed by `session_id`) |
+| Deployment | Vercel (serverless Python + static frontend) |
 
 ---
 
@@ -106,9 +141,13 @@ The app will be available at `http://localhost:5173`.
 |---|---|---|---|
 | `GEMINI_API_KEY` | Yes | - | Google Gemini API key |
 | `GEMINI_MODEL` | No | `gemini-2.5-flash` | Chat model |
-| `EMBEDDING_MODEL` | No | `text-embedding-004` | Embedding model |
-| `CHROMA_PERSIST_DIR` | No | `./chroma_data` | ChromaDB storage path |
+| `EMBEDDING_MODEL` | No | `gemini-embedding-001` | Embedding model |
+| `CHROMA_PERSIST_DIR` | No | `/tmp/chroma_data` | ChromaDB storage path |
 | `LOG_LEVEL` | No | `info` | Logging level |
+| `MAX_SESSION_HISTORY` | No | `20` | Max conversation turns per session |
+| `CORS_ORIGINS` | No | `localhost:5173,...` | Comma-separated allowed CORS origins |
+| `RAG_TOP_K` | No | `5` | Number of RAG chunks to retrieve per query |
+| `ENABLE_THERAPIST_SUGGESTIONS` | No | `true` | Toggle therapist suggestions on/off |
 
 ---
 
@@ -138,6 +177,12 @@ Tests cover:
 - Two-stage: fast keyword check, then Gemini fallback for ambiguous cases
 - Permissive with borderline cases (work stress, venting, relationship issues)
 - Off-topic messages get a short, non-preachy redirect
+
+### Concern Classifier
+- Classifies in-scope messages into: **stress**, **anxiety**, **relationship**, or **none**
+- Same two-stage pattern: keyword matching → Gemini LLM fallback
+- Only runs for non-crisis, in-scope messages (after crisis detection and topic classification)
+- Powers the therapist suggestion feature
 
 ### Output Moderation
 - Post-generation scan for diagnostic language and medication references
@@ -174,6 +219,15 @@ For production deployment, implement a clear data retention policy and consider 
 
 ---
 
+## Deployment
+
+The project is configured for **Vercel** deployment:
+- `vercel.json` handles build commands, API rewrites, and static asset caching
+- Frontend builds to `frontend/dist` and is served as static files
+- Backend API routes are served via Vercel's serverless Python runtime (`api/index.py`)
+
+---
+
 ## Project Structure
 
 ```
@@ -187,10 +241,13 @@ chatBOT/
 │   │   ├── core/
 │   │   │   ├── config.py
 │   │   │   └── logging_config.py
+│   │   ├── data/
+│   │   │   └── therapists.json          # Curated therapist data per category
 │   │   ├── guardrails/
 │   │   │   ├── crisis_detector.py
 │   │   │   ├── crisis_patterns.json
 │   │   │   ├── topic_classifier.py
+│   │   │   ├── concern_classifier.py    # NEW — concern classification + therapist lookup
 │   │   │   ├── output_moderation.py
 │   │   │   └── system_prompt.py
 │   │   ├── rag/
@@ -214,10 +271,13 @@ chatBOT/
 │   │   │   ├── GradientWave/
 │   │   │   ├── ChatWindow/
 │   │   │   ├── MessageBubble/
-│   │   │   ├── InputBar/
+│   │   │   ├── InputBar/                # Voice input (mic button + Web Speech API)
 │   │   │   ├── CrisisBanner/
-│   │   │   └── Header/
-│   │   ├── hooks/useChat.js
+│   │   │   ├── Header/
+│   │   │   └── TherapistSuggestion/     # NEW — therapist recommendation cards
+│   │   ├── hooks/
+│   │   │   ├── useChat.js
+│   │   │   └── useSpeechRecognition.js  # NEW — Web Speech API hook
 │   │   ├── services/api.js
 │   │   ├── styles/theme.css
 │   │   ├── App.jsx
@@ -226,5 +286,8 @@ chatBOT/
 │   ├── vite.config.js
 │   ├── package.json
 │   └── .env.example
+├── api/
+│   └── index.py                         # Vercel serverless entry point
+├── vercel.json
 └── README.md
 ```
