@@ -1,6 +1,6 @@
 # MindBridge — Mental Health Support Chatbot
 
-A production-quality mental wellbeing support chatbot with a FastAPI backend (Gemini API, RAG, guardrails) and a React + Vite frontend. Built for [Mindpeers](https://dashboard.mindpeers.co).
+A mental wellbeing support chatbot with a FastAPI backend (Gemini API, RAG, guardrails) and a React + Vite frontend.
 
 > **Important**: This is a wellbeing support tool, not a substitute for professional mental health care. In an emergency, contact local emergency services or the helplines listed below.
 
@@ -48,7 +48,7 @@ Response -> Frontend -> Chat UI + Therapist Cards
 
 ## Features
 
-### 🎙️ Voice Input (Web Speech API)
+### Voice Input (Web Speech API)
 
 Users can speak their messages instead of typing — especially useful for expressing difficult emotions.
 
@@ -59,7 +59,7 @@ Users can speak their messages instead of typing — especially useful for expre
 - **Error handling**: Friendly messages for denied microphone permissions, missing devices, and network errors; auto-dismiss after 3 seconds
 - **Append mode**: Voice input appends to any existing text in the input field, so users can combine typing and speaking
 
-### 🧠 Therapist Suggestions
+### Therapist Suggestions
 
 The chatbot intelligently identifies the user's concern category and suggests relevant MindPeers therapists.
 
