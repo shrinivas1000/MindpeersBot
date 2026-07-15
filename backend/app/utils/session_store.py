@@ -22,8 +22,10 @@ class SessionStore:
     def __init__(self, max_history: int | None = None):
         self._max_history = max_history or settings.max_session_history
         self._sessions: dict[str, list[dict]] = defaultdict(list)
-        # Tracks the user-message index at which therapists were last suggested
-        self._therapist_tracker: dict[str, int] = {}
+        # Tracks the user-message index at which therapists were last suggested,
+        # keyed by (session_id, category) so each concern type has its own cooldown.
+        # Structure: {session_id: {category: last_suggested_at_msg_index}}
+        self._therapist_tracker: dict[str, dict[str, int]] = defaultdict(dict)
 
     def get_history(self, session_id: str) -> list[dict]:
         """Return the conversation history for a session."""
@@ -43,7 +45,7 @@ class SessionStore:
         return session_id in self._sessions and len(self._sessions[session_id]) > 0
 
     def clear_session(self, session_id: str) -> None:
-        """Clear a session's history."""
+        """Clear a session's history and all per-category cooldowns."""
         self._sessions.pop(session_id, None)
         self._therapist_tracker.pop(session_id, None)
 
@@ -53,20 +55,26 @@ class SessionStore:
         """Count user messages in a session's history."""
         return sum(1 for m in self._sessions[session_id] if m["role"] == "user")
 
-    def should_suggest_therapists(self, session_id: str, cooldown: int = 3) -> bool:
+    def should_suggest_therapists(
+        self, session_id: str, category: str, cooldown: int = 3,
+    ) -> bool:
         """
-        Return True if enough user messages have passed since the last
-        therapist suggestion (or if therapists have never been suggested).
+        Return True if therapists should be suggested for this category.
+
+        Each category (stress, anxiety, relationship) has its own independent
+        cooldown.  A new category always bypasses the cooldown; the same
+        category must wait `cooldown` user messages since the last suggestion.
         """
-        if session_id not in self._therapist_tracker:
+        per_category = self._therapist_tracker.get(session_id)
+        if not per_category or category not in per_category:
             return True
-        last_suggested_at = self._therapist_tracker[session_id]
+        last_suggested_at = per_category[category]
         current_count = self._user_message_count(session_id)
         return (current_count - last_suggested_at) >= cooldown
 
-    def mark_therapist_suggested(self, session_id: str) -> None:
-        """Record that therapists were suggested at the current message count."""
-        self._therapist_tracker[session_id] = self._user_message_count(session_id)
+    def mark_therapist_suggested(self, session_id: str, category: str) -> None:
+        """Record that therapists were suggested for a category at the current message count."""
+        self._therapist_tracker[session_id][category] = self._user_message_count(session_id)
 
 
 # Singleton instance

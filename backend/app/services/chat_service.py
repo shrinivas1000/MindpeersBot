@@ -106,27 +106,32 @@ async def process_message(message: str, session_id: str) -> ChatResponse:
         logger.info("Output moderation modified response | session_id=%s", session_id)
 
     # ── Step 5.5: Concern Classification (therapist suggestions) ─────
+    # Classify first, then check per-category cooldown.  This lets a user
+    # who switches topics (stress → relationship) get fresh suggestions
+    # immediately, while repeated messages on the same topic respect the
+    # cooldown window.
     suggested_category = None
     suggested_therapists = None
     therapist_cta = None
 
-    if settings.enable_therapist_suggestions and session_store.should_suggest_therapists(session_id):
+    if settings.enable_therapist_suggestions:
         try:
             concern = await classify_concern(message)
-            if concern != "none":
+            if concern != "none" and session_store.should_suggest_therapists(session_id, concern):
                 suggestion = get_therapist_suggestions(concern)
                 if suggestion:
                     therapist_list, cta = suggestion
                     suggested_category = concern
                     suggested_therapists = therapist_list
                     therapist_cta = cta
-                    session_store.mark_therapist_suggested(session_id)
+                    session_store.mark_therapist_suggested(session_id, concern)
                     logger.info(
                         "Therapist suggestion added | session_id=%s | category=%s",
                         session_id, concern,
                     )
         except Exception as e:
             logger.error("Concern classification error: %s — skipping suggestions", e)
+
 
     # ── Step 6: Store in Session History ──────────────────────────────
     session_store.add_message(session_id, "user", message)
