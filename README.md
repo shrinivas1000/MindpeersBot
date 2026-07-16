@@ -169,7 +169,7 @@ Tests cover:
 
 ### Crisis Detector
 - Deterministic regex/keyword matching against a curated pattern file (`app/guardrails/crisis_patterns.json`)
-- Bypasses the LLM entirely — returns hardcoded helpline response
+- Bypasses the LLM entirely, returns hardcoded helpline response
 - Works even if the Gemini API is down
 - Privacy-conscious logging: timestamps and session IDs only, no raw message content
 
@@ -242,12 +242,12 @@ chatBOT/
 │   │   │   ├── config.py
 │   │   │   └── logging_config.py
 │   │   ├── data/
-│   │   │   └── therapists.json          # Curated therapist data per category
+│   │   │   └── therapists.json         
 │   │   ├── guardrails/
 │   │   │   ├── crisis_detector.py
 │   │   │   ├── crisis_patterns.json
 │   │   │   ├── topic_classifier.py
-│   │   │   ├── concern_classifier.py    # NEW — concern classification + therapist lookup
+│   │   │   ├── concern_classifier.py    
 │   │   │   ├── output_moderation.py
 │   │   │   └── system_prompt.py
 │   │   ├── rag/
@@ -271,13 +271,13 @@ chatBOT/
 │   │   │   ├── GradientWave/
 │   │   │   ├── ChatWindow/
 │   │   │   ├── MessageBubble/
-│   │   │   ├── InputBar/                # Voice input (mic button + Web Speech API)
+│   │   │   ├── InputBar/              
 │   │   │   ├── CrisisBanner/
 │   │   │   ├── Header/
-│   │   │   └── TherapistSuggestion/     # NEW — therapist recommendation cards
+│   │   │   └── TherapistSuggestion/     
 │   │   ├── hooks/
 │   │   │   ├── useChat.js
-│   │   │   └── useSpeechRecognition.js  # NEW — Web Speech API hook
+│   │   │   └── useSpeechRecognition.js 
 │   │   ├── services/api.js
 │   │   ├── styles/theme.css
 │   │   ├── App.jsx
@@ -287,7 +287,7 @@ chatBOT/
 │   ├── package.json
 │   └── .env.example
 ├── api/
-│   └── index.py                         # Vercel serverless entry point
+│   └── index.py                        
 ├── vercel.json
 └── README.md
 ```
